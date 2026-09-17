@@ -1,9 +1,6 @@
---extra-index-url https://download.pytorch.org/whl/cpu
-streamlit>=1.36
-pandas>=2.0
-pillow>=10.0
-altair>=5.0
-openpyxl>=3.1
-torch==2.3.1
-torchvision==0.18.1
-ultralytics>=8.2
+streamlit
+pandas
+pillow
+altair
+openpyxl
+ultralytics
