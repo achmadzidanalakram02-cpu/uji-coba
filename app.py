@@ -46,6 +46,41 @@ except Exception:  # pragma: no cover
     YOLO = None
 
 
+# ------------------------------------------------------------
+# 0. KOMPATIBILITAS API STREAMLIT
+# ------------------------------------------------------------
+# Streamlit >=1.50 mengganti `use_container_width` dengan `width`. Shim ini
+# menerjemahkan argumen lama ke argumen baru saat aplikasi dijalankan, sehingga
+# berkas yang sama tetap jalan di versi lama maupun versi terbaru.
+def _install_compat_shim() -> None:
+    import inspect
+
+    for name in ("button", "download_button", "form_submit_button", "image",
+                 "dataframe", "altair_chart", "bar_chart", "line_chart", "plotly_chart"):
+        fn = getattr(st, name, None)
+        if fn is None:
+            continue
+        try:
+            params = inspect.signature(fn).parameters
+        except (TypeError, ValueError):
+            continue
+        if "use_container_width" in params:
+            continue  # versi lama, argumen asli masih diterima
+        has_width = "width" in params
+
+        def wrapper(*args, _fn=fn, _has_width=has_width, **kwargs):
+            legacy = kwargs.pop("use_container_width", None)
+            kwargs.pop("use_column_width", None)
+            if legacy is not None and _has_width and "width" not in kwargs:
+                kwargs["width"] = "stretch" if legacy else "content"
+            return _fn(*args, **kwargs)
+
+        setattr(st, name, wrapper)
+
+
+_install_compat_shim()
+
+
 # ============================================================
 # 1. KONFIGURASI
 # ============================================================
@@ -1033,8 +1068,8 @@ def synthesize(detections: list[dict], anam: dict) -> str:
 def show_image(img, caption: str = "") -> None:
     try:
         st.image(img, caption=caption or None, use_container_width=True)
-    except TypeError:  # versi Streamlit lama
-        st.image(img, caption=caption or None, use_column_width=True)
+    except TypeError:
+        st.image(img, caption=caption or None)
 
 
 def enhance(img: Image.Image, brightness: float, contrast: float, sharpness: float, auto: bool) -> Image.Image:
